@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAuthFromCookies } from '@/lib/auth';
 import sql from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const auth = getAuthFromCookies();
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

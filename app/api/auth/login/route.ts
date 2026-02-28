@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import sql from '@/lib/db';
 import { comparePassword, signToken } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const { username, password } = await req.json();
