@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kelas9a_smpn1_jwt_2025_aman_schoolapp_yudis';
+const JWT_SECRET = 'kelas9a_smpn1_jwt_2025_aman_schoolapp_yudis';
 
 export interface JWTPayload {
   userId: number;
