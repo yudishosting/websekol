@@ -2,24 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
 
-interface Props {
-  username: string;
-}
+interface Props { username: string; }
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: '🏠' },
-  { href: '/admin/students', label: 'Students', icon: '👥' },
-  { href: '/admin/schedules', label: 'Schedule', icon: '📅' },
-  { href: '/admin/announcements', label: 'Announcements', icon: '📢' },
-  { href: '/admin/activities', label: 'Activities', icon: '🎯' },
+  { href: '/admin/students', label: 'Siswa', icon: '👥' },
+  { href: '/admin/schedules', label: 'Jadwal', icon: '📅' },
+  { href: '/admin/announcements', label: 'Pengumuman', icon: '📢' },
+  { href: '/admin/activities', label: 'Kegiatan', icon: '🎯' },
 ];
 
 export default function AdminSidebar({ username }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -27,73 +23,49 @@ export default function AdminSidebar({ username }: Props) {
   };
 
   return (
-    <aside
-      className={`${collapsed ? 'w-16' : 'w-64'} bg-[#1e3a8a] text-white flex flex-col transition-all duration-300 sticky top-0 h-screen`}
-    >
-      {/* Header */}
-      <div className="p-4 border-b border-white/10 flex items-center gap-3">
-        <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-          <span className="text-lg">🎓</span>
-        </div>
-        {!collapsed && (
-          <div>
-            <div className="font-bold text-sm font-display">SCHOOL APP</div>
-            <div className="text-xs text-blue-300">Admin Panel</div>
-          </div>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto text-white/60 hover:text-white transition"
-        >
-          {collapsed ? '→' : '←'}
-        </button>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1">
-        {!collapsed && (
-          <p className="text-xs text-blue-400 font-semibold uppercase tracking-wider px-3 mb-2 mt-1">
-            ADMIN MENU
-          </p>
-        )}
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || 
-            (item.href !== '/admin' && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                ${isActive ? 'bg-white/20 text-white border-l-2 border-white' : 'text-blue-200 hover:text-white hover:bg-white/10'}`}
-            >
-              <span className="text-lg flex-shrink-0">{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* User */}
-      <div className="p-3 border-t border-white/10">
-        {!collapsed && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold">
-              {username[0]?.toUpperCase()}
-            </div>
+    <>
+      {/* TOP NAV BAR - full width mobile */}
+      <div style={{
+        position:'fixed', top:0, left:0, right:0, zIndex:100,
+        background:'linear-gradient(135deg,#1e3a8a,#1d4ed8)',
+        boxShadow:'0 2px 16px rgba(0,0,0,0.2)',
+      }}>
+        {/* Header */}
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,0.1)'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+            <div style={{width:'36px', height:'36px', background:'rgba(255,255,255,0.2)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>🎓</div>
             <div>
-              <div className="text-sm font-semibold">{username}</div>
-              <div className="text-xs text-blue-300">Administrator</div>
+              <div style={{color:'#fff', fontSize:'14px', fontWeight:'800', fontFamily:"'Sora',sans-serif", lineHeight:1}}>SMKN 2 Jember</div>
+              <div style={{color:'#93c5fd', fontSize:'10px'}}>Admin: {username}</div>
             </div>
           </div>
-        )}
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-300 hover:text-white hover:bg-red-500/30 transition"
-        >
-          <span className="text-lg flex-shrink-0">🚪</span>
-          {!collapsed && 'Logout'}
-        </button>
+          <button onClick={handleLogout} style={{background:'rgba(239,68,68,0.2)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'8px', padding:'6px 12px', color:'#fca5a5', fontSize:'11px', fontWeight:'600', cursor:'pointer', fontFamily:'inherit'}}>
+            Keluar
+          </button>
+        </div>
+
+        {/* Bottom nav tabs */}
+        <div style={{display:'flex', overflowX:'auto'}}>
+          {navItems.map(item => {
+            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+            return (
+              <Link key={item.href} href={item.href} style={{
+                flex:1, minWidth:'60px', display:'flex', flexDirection:'column', alignItems:'center',
+                padding:'8px 4px 6px', textDecoration:'none', gap:'2px',
+                background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                borderBottom: isActive ? '3px solid #fff' : '3px solid transparent',
+                transition:'all .15s',
+              }}>
+                <span style={{fontSize:'18px'}}>{item.icon}</span>
+                <span style={{fontSize:'9px', fontWeight:'700', color: isActive ? '#fff' : 'rgba(255,255,255,0.6)', letterSpacing:'0.3px'}}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </aside>
+
+      {/* Spacer so content doesnt hide behind fixed nav */}
+      <div style={{height:'100px'}} />
+    </>
   );
 }
