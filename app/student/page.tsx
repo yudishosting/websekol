@@ -81,7 +81,7 @@ export default function StudentPage() {
     return schedules.filter(s => s.day === day);
   };
 
-  const allTimes = [...new Set(schedules.map(s => s.start_time))].sort();
+  const allTimes = Array.from(new Set<string>(schedules.map(s => s.start_time))).sort();
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'ringkasan', label: 'Ringkasan' },
