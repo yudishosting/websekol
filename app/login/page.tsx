@@ -14,20 +14,29 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
+
       const data = await res.json();
+
       if (!res.ok) {
         setError(data.error || 'Login gagal');
         setLoading(false);
         return;
       }
-      if (data.role === 'admin') router.push('/admin');
-      else router.push('/student');
+
+      if (data.role === 'admin') {
+        router.push('/admin');
+      } else if (data.role === 'wali_kelas') {
+        router.push('/wali-kelas');
+      } else {
+        router.push('/student');
+      }
     } catch {
       setError('Terjadi kesalahan. Coba lagi.');
       setLoading(false);
@@ -35,86 +44,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      background: 'linear-gradient(145deg,#1e3a8a 0%,#1d4ed8 50%,#4338ca 100%)',
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      position: 'relative',
-      overflow: 'hidden',
-      fontFamily: "'Plus Jakarta Sans', sans-serif",
-    }}>
-      {/* Decorative circles */}
-      <div style={{position:'absolute',width:'400px',height:'400px',borderRadius:'50%',background:'rgba(255,255,255,0.05)',top:'-150px',left:'-100px'}}/>
-      <div style={{position:'absolute',width:'300px',height:'300px',borderRadius:'50%',background:'rgba(255,255,255,0.05)',bottom:'-100px',right:'-80px'}}/>
-      <div style={{position:'absolute',width:'60px',height:'60px',borderRadius:'10px',background:'rgba(255,255,255,0.08)',top:'80px',right:'80px',transform:'rotate(20deg)'}}/>
-      <div style={{position:'absolute',width:'40px',height:'40px',borderRadius:'50%',background:'rgba(255,255,255,0.08)',top:'160px',left:'60px'}}/>
-      <div style={{position:'absolute',width:'50px',height:'50px',borderRadius:'10px',background:'rgba(255,255,255,0.08)',bottom:'120px',left:'80px',transform:'rotate(15deg)'}}/>
+    <div className="login-bg flex items-center justify-center relative">
+      {/* Decorative shapes */}
+      <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rotate-45 rounded-lg" />
+      <div className="absolute top-40 right-20 w-16 h-16 bg-white/10 rounded-full" />
+      <div className="absolute bottom-32 left-32 w-24 h-24 bg-white/10 rotate-12 rounded-lg" />
+      <div className="absolute bottom-20 right-10 w-12 h-12 bg-white/10 rounded-full" />
 
-      <div style={{width:'100%',maxWidth:'400px',position:'relative',zIndex:1}}>
+      <div className="relative z-10 w-full max-w-md mx-4">
         {/* Logo */}
-        <div style={{textAlign:'center',marginBottom:'32px'}}>
-          <div style={{
-            width:'72px',height:'72px',
-            background:'rgba(255,255,255,0.15)',
-            borderRadius:'22px',
-            display:'flex',alignItems:'center',justifyContent:'center',
-            margin:'0 auto 16px',
-            fontSize:'32px',
-            backdropFilter:'blur(10px)',
-            border:'1px solid rgba(255,255,255,0.2)',
-          }}>🎓</div>
-          <h1 style={{color:'#fff',fontSize:'26px',fontWeight:'800',margin:'0 0 4px',fontFamily:"'Sora',sans-serif",letterSpacing:'-0.5px'}}>SMKN 2 JEMBER</h1>
-          <p style={{color:'#93c5fd',fontSize:'13px',margin:'0 0 4px'}}>XI TSM 2 · Sistem Informasi Kelas</p>
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-2xl mb-4 backdrop-blur-sm">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L1 9L12 15L21 10.09V17H23V9L12 3Z" fill="white"/>
+              <path d="M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" fill="white" opacity="0.7"/>
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-white font-display">SCHOOL APP</h1>
+          <p className="text-blue-200 mt-1 text-sm">Sistem Informasi Kelas Digital</p>
         </div>
 
         {/* Card */}
-        <div style={{
-          background:'rgba(255,255,255,0.12)',
-          backdropFilter:'blur(16px)',
-          border:'1px solid rgba(255,255,255,0.2)',
-          borderRadius:'28px',
-          padding:'32px',
-          boxShadow:'0 24px 64px rgba(0,0,0,0.3)',
-        }}>
-          <h2 style={{color:'#fff',fontSize:'18px',fontWeight:'700',textAlign:'center',margin:'0 0 24px',fontFamily:"'Sora',sans-serif"}}>Masuk ke Akun</h2>
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 shadow-2xl">
+          <h2 className="text-xl font-semibold text-white mb-6 text-center">Masuk ke Akun</h2>
 
-          <form onSubmit={handleLogin}>
-            <div style={{marginBottom:'16px'}}>
-              <label style={{color:'#bfdbfe',fontSize:'12px',fontWeight:'600',display:'block',marginBottom:'6px',letterSpacing:'0.5px'}}>USERNAME</label>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-blue-200 text-sm font-medium mb-2">Username</label>
               <input
                 type="text"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Masukkan username..."
                 required
-                style={{
-                  width:'100%',background:'rgba(255,255,255,0.1)',border:'1.5px solid rgba(255,255,255,0.25)',
-                  borderRadius:'14px',padding:'12px 16px',color:'#fff',fontSize:'14px',outline:'none',
-                  fontFamily:'inherit',boxSizing:'border-box',
-                }}
+                className="w-full bg-white/10 border border-white/30 text-white placeholder-blue-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/50 transition"
               />
             </div>
-            <div style={{marginBottom:'20px'}}>
-              <label style={{color:'#bfdbfe',fontSize:'12px',fontWeight:'600',display:'block',marginBottom:'6px',letterSpacing:'0.5px'}}>PASSWORD</label>
+
+            <div>
+              <label className="block text-blue-200 text-sm font-medium mb-2">Password</label>
               <input
                 type="password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan password..."
                 required
-                style={{
-                  width:'100%',background:'rgba(255,255,255,0.1)',border:'1.5px solid rgba(255,255,255,0.25)',
-                  borderRadius:'14px',padding:'12px 16px',color:'#fff',fontSize:'14px',outline:'none',
-                  fontFamily:'inherit',boxSizing:'border-box',
-                }}
+                className="w-full bg-white/10 border border-white/30 text-white placeholder-blue-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/50 transition"
               />
             </div>
 
             {error && (
-              <div style={{background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.4)',borderRadius:'12px',padding:'10px 14px',color:'#fca5a5',fontSize:'13px',marginBottom:'16px'}}>
+              <div className="bg-red-500/20 border border-red-400/50 text-red-200 rounded-xl px-4 py-3 text-sm">
                 {error}
               </div>
             )}
@@ -122,21 +102,24 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              style={{
-                width:'100%',background:'#fff',color:'#1e3a8a',border:'none',
-                borderRadius:'14px',padding:'13px',fontSize:'14px',fontWeight:'700',
-                cursor:'pointer',fontFamily:"'Sora',sans-serif",
-                opacity: loading ? 0.7 : 1,
-              }}
+              className="w-full bg-white text-blue-900 font-semibold rounded-xl px-4 py-3 mt-2 hover:bg-blue-50 transition-all active:scale-95 disabled:opacity-60"
             >
-              {loading ? 'Memproses...' : 'Login →'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Memproses...
+                </span>
+              ) : 'Login'}
             </button>
           </form>
-        </div>
 
-        <p style={{color:'rgba(255,255,255,0.4)',fontSize:'11px',textAlign:'center',marginTop:'20px'}}>
-          © 2025 SMKN 2 Jember · XI TSM 2
-        </p>
+          <p className="text-center text-blue-300 text-xs mt-6">
+            Default admin: <span className="text-white font-mono">admin / admin123</span>
+          </p>
+        </div>
       </div>
     </div>
   );

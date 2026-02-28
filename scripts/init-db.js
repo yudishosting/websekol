@@ -67,6 +67,7 @@ async function initDB() {
       title VARCHAR(300) NOT NULL,
       description TEXT,
       date DATE NOT NULL,
+      photo_url TEXT,
       created_by INT REFERENCES users(id),
       created_at TIMESTAMP DEFAULT NOW()
     )
@@ -81,6 +82,17 @@ async function initDB() {
     VALUES ('admin', ${adminPassword}, 'admin')
     ON CONFLICT (username) DO NOTHING
   `;
+
+  // Insert default wali kelas
+  const waliPassword = await bcrypt.hash('walikelas123', 10);
+  await sql`
+    INSERT INTO users (username, password, role)
+    VALUES ('walikelas', ${waliPassword}, 'wali_kelas')
+    ON CONFLICT (username) DO NOTHING
+  `;
+
+  // Add photo_url column if not exists (for existing DBs)
+  await sql`ALTER TABLE activities ADD COLUMN IF NOT EXISTS photo_url TEXT`;
 
   // Insert sample subjects
   const subjects = [
@@ -124,8 +136,62 @@ async function initDB() {
     }
   }
 
+
+  // ─────────────────────────────────────────────
+  //  Insert sample students (struktur pengurus)
+  //  Urutan: Wali Kelas → Ketua → Wakil Ketua →
+  //          Sekretaris → Bendahara → Anggota
+  // ─────────────────────────────────────────────
+  const studentData = [
+    // Wali Kelas
+    { name: 'Bu Ratna Dewi, S.Pd.',   nis: '197801012005', position: 'Wali Kelas'     },
+
+    // Pengurus Inti
+    { name: 'Arif Hidayat',           nis: '2025001',      position: 'Ketua'           },
+    { name: 'Siti Nurhaliza',         nis: '2025002',      position: 'Wakil Ketua'     },
+    { name: 'Dewi Rahayu',            nis: '2025003',      position: 'Sekretaris'    },
+    { name: 'Fajar Ramadhan',         nis: '2025004',      position: 'Sekretaris'   },
+    { name: 'Maya Anggraini',         nis: '2025005',      position: 'Bendahara'     },
+    { name: 'Rizky Firmansyah',       nis: '2025006',      position: 'Bendahara'    },
+
+    // Anggota
+    { name: 'Andi Pratama',           nis: '2025007',      position: 'Anggota' },
+    { name: 'Budi Santoso',           nis: '2025008',      position: 'Anggota' },
+    { name: 'Citra Lestari',          nis: '2025009',      position: 'Anggota' },
+    { name: 'Dina Marlina',           nis: '2025010',      position: 'Anggota' },
+    { name: 'Eko Prasetyo',           nis: '2025011',      position: 'Anggota' },
+    { name: 'Fitri Handayani',        nis: '2025012',      position: 'Anggota' },
+    { name: 'Gilang Saputra',         nis: '2025013',      position: 'Anggota' },
+    { name: 'Hani Permatasari',       nis: '2025014',      position: 'Anggota' },
+    { name: 'Irfan Maulana',          nis: '2025015',      position: 'Anggota' },
+    { name: 'Jihan Aulia',            nis: '2025016',      position: 'Anggota' },
+    { name: 'Kevin Surya',            nis: '2025017',      position: 'Anggota' },
+    { name: 'Laila Nurfitria',        nis: '2025018',      position: 'Anggota' },
+    { name: 'Muhamad Fauzan',         nis: '2025019',      position: 'Anggota' },
+    { name: 'Nadya Putri',            nis: '2025020',      position: 'Anggota' },
+    { name: 'Oscar Wibowo',           nis: '2025021',      position: 'Anggota' },
+    { name: 'Putri Ayu',              nis: '2025022',      position: 'Anggota' },
+    { name: 'Qori Ramadani',          nis: '2025023',      position: 'Anggota' },
+    { name: 'Reza Nugraha',           nis: '2025024',      position: 'Anggota' },
+    { name: 'Sari Indah',             nis: '2025025',      position: 'Anggota' },
+    { name: 'Taufik Hidayat',         nis: '2025026',      position: 'Anggota' },
+    { name: 'Ulfa Maghfiroh',         nis: '2025027',      position: 'Anggota' },
+    { name: 'Vino Adikara',           nis: '2025028',      position: 'Anggota' },
+    { name: 'Wulan Sari',             nis: '2025029',      position: 'Anggota' },
+    { name: 'Yoga Pratama',           nis: '2025030',      position: 'Anggota' },
+  ];
+
+  for (const s of studentData) {
+    await sql`
+      INSERT INTO students (name, nis, position)
+      VALUES (${s.name}, ${s.nis}, ${s.position})
+      ON CONFLICT (nis) DO NOTHING
+    `;
+  }
+
   console.log('✅ Database initialized successfully!');
   console.log('Admin credentials: username=admin, password=admin123');
+  console.log('Wali Kelas credentials: username=walikelas, password=walikelas123');
 }
 
 initDB().catch(console.error);

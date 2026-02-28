@@ -4,13 +4,14 @@ import AdminSidebar from '@/components/AdminSidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const auth = getAuthFromCookies();
+  
   if (!auth) redirect('/login');
   if (auth.role !== 'admin') redirect('/student');
 
   return (
-    <div style={{minHeight:'100vh', background:'#f0f4ff', fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+    <div className="flex min-h-screen bg-slate-100">
       <AdminSidebar username={auth.username} />
-      <main style={{padding:'0'}}>
+      <main className="flex-1 overflow-auto">
         {children}
       </main>
     </div>
