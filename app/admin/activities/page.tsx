@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Activity {
   id: number;
   title: string;
   description: string;
   date: string;
-  photo_url: string | null;
   author: string;
   created_at: string;
 }
@@ -16,10 +15,7 @@ export default function AdminActivities() {
   const [items, setItems] = useState<Activity[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', date: '' });
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = () => {
     fetch('/api/activities').then(r => r.json()).then(setItems);
@@ -27,30 +23,17 @@ export default function AdminActivities() {
 
   useEffect(() => { fetchItems(); }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result as string);
-      setUploading(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     await fetch('/api/activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, photo_url: photoPreview }),
+      body: JSON.stringify(form),
     });
     setLoading(false);
     setShowModal(false);
     setForm({ title: '', description: '', date: '' });
-    setPhotoPreview(null);
     fetchItems();
   };
 
@@ -62,12 +45,6 @@ export default function AdminActivities() {
       body: JSON.stringify({ id }),
     });
     fetchItems();
-  };
-
-  const resetModal = () => {
-    setShowModal(false);
-    setForm({ title: '', description: '', date: '' });
-    setPhotoPreview(null);
   };
 
   return (
@@ -85,36 +62,25 @@ export default function AdminActivities() {
         </button>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         {items.map((item) => (
-          <div key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col">
-            {item.photo_url ? (
-              <div className="h-44 w-full overflow-hidden bg-slate-100">
-                <img src={item.photo_url} alt={item.title} className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <div className="h-24 w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-4xl">
-                📅
-              </div>
-            )}
-            <div className="p-5 flex-1 flex flex-col">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block mb-2">
-                    📅 {new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </div>
-                  <h3 className="font-semibold text-slate-800 font-display">{item.title}</h3>
-                  {item.description && (
-                    <p className="text-slate-500 text-sm mt-2">{item.description}</p>
-                  )}
+          <div key={item.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block mb-2">
+                  📅 {new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="ml-3 bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0"
-                >
-                  🗑️
-                </button>
+                <h3 className="font-semibold text-slate-800 font-display">{item.title}</h3>
+                {item.description && (
+                  <p className="text-slate-500 text-sm mt-2">{item.description}</p>
+                )}
               </div>
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="ml-3 bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex-shrink-0"
+              >
+                🗑️
+              </button>
             </div>
           </div>
         ))}
@@ -127,7 +93,7 @@ export default function AdminActivities() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h2 className="text-lg font-bold text-slate-800 font-display mb-5">Tambah Kegiatan</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -160,35 +126,8 @@ export default function AdminActivities() {
                   className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Foto Dokumentasi</label>
-                <div
-                  className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition"
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {photoPreview ? (
-                    <div className="relative">
-                      <img src={photoPreview} alt="Preview" className="w-full h-40 object-cover rounded-lg" />
-                      <button
-                        type="button"
-                        onClick={(ev) => { ev.stopPropagation(); setPhotoPreview(null); if (fileRef.current) fileRef.current.value = ''; }}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center hover:bg-red-600"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="py-4">
-                      <div className="text-3xl mb-2">{uploading ? '⏳' : '📷'}</div>
-                      <p className="text-sm text-slate-500">{uploading ? 'Memproses...' : 'Klik untuk pilih foto'}</p>
-                      <p className="text-xs text-slate-400 mt-1">JPG, PNG, WebP</p>
-                    </div>
-                  )}
-                </div>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-              </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={resetModal}
+                <button type="button" onClick={() => setShowModal(false)}
                   className="flex-1 border border-slate-200 text-slate-600 rounded-xl py-2.5 font-medium text-sm hover:bg-slate-50 transition">
                   Batal
                 </button>

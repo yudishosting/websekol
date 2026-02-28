@@ -2,49 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 
-type Tab = 'ringkasan' | 'siswa' | 'jadwal' | 'pengumuman' | 'kegiatan';
+type Tab = 'ringkasan' | 'siswa' | 'jadwal' | 'pengumuman' | 'kegiatan' | 'galeri';
 
-interface Student {
-  id: number;
-  name: string;
-  nis: string;
-  position: string;
-  photo_url: string | null;
-}
-
-interface Schedule {
-  id: number;
-  day: string;
-  start_time: string;
-  end_time: string;
-  subject: string;
-}
-
-interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  author: string;
-  created_at: string;
-}
-
-interface Activity {
-  id: number;
-  title: string;
-  description: string;
-  date: string;
-  photo_url: string | null;
-}
+interface Student { id: number; name: string; nis: string; position: string; photo_url: string | null; }
+interface Schedule { id: number; day: string; start_time: string; end_time: string; subject: string; }
+interface Announcement { id: number; title: string; content: string; author: string; created_at: string; }
+interface Activity { id: number; title: string; description: string; date: string; }
+interface GalleryItem { id: number; title: string; description: string | null; photo_url: string; event_date: string | null; }
 
 const positionColor: Record<string, string> = {
-  Ketua: '#3b82f6',
-  Sekretaris: '#8b5cf6',
-  Bendahara: '#f59e0b',
-  Anggota: '#10b981',
+  Ketua: '#3b82f6', Sekretaris: '#8b5cf6', Bendahara: '#f59e0b', Anggota: '#10b981',
 };
-
 const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
 export default function StudentPage() {
@@ -53,15 +22,17 @@ export default function StudentPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [search, setSearch] = useState('');
-  const [className] = useState('Kelas 9A');
+  const [previewImg, setPreviewImg] = useState<GalleryItem | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/students').then(r => r.json()).then(setStudents);
-    fetch('/api/schedules').then(r => r.json()).then(setSchedules);
-    fetch('/api/announcements').then(r => r.json()).then(setAnnouncements);
-    fetch('/api/activities').then(r => r.json()).then(setActivities);
+    fetch('/api/students').then(r => r.json()).then(d => Array.isArray(d) ? setStudents(d) : null);
+    fetch('/api/schedules').then(r => r.json()).then(d => Array.isArray(d) ? setSchedules(d) : null);
+    fetch('/api/announcements').then(r => r.json()).then(d => Array.isArray(d) ? setAnnouncements(d) : null);
+    fetch('/api/activities').then(r => r.json()).then(d => Array.isArray(d) ? setActivities(d) : null);
+    fetch('/api/gallery').then(r => r.json()).then(d => Array.isArray(d) ? setGallery(d) : null);
   }, []);
 
   const handleLogout = async () => {
@@ -69,247 +40,299 @@ export default function StudentPage() {
     router.push('/login');
   };
 
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.nis.includes(search)
+  const filtered = students.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) || s.nis.includes(search)
   );
-
-  const ketua = students.find(s => s.position === 'Ketua');
-  const sekretaris = students.find(s => s.position === 'Sekretaris');
-  const bendahara = students.find(s => s.position === 'Bendahara');
-
-  const getScheduleForDay = (day: string) => {
-    return schedules.filter(s => s.day === day);
-  };
-
+  const pengurus = students.filter(s => ['Ketua', 'Sekretaris', 'Bendahara'].includes(s.position));
   const allTimes = Array.from(new Set<string>(schedules.map(s => s.start_time))).sort();
+  const now = new Date();
+  const upcoming = activities.filter(a => new Date(a.date) >= now);
+  const archived = activities.filter(a => new Date(a.date) < now);
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'ringkasan', label: 'Ringkasan' },
-    { key: 'siswa', label: 'Siswa' },
-    { key: 'jadwal', label: 'Jadwal' },
-    { key: 'pengumuman', label: 'Pengumuman' },
-    { key: 'kegiatan', label: 'Kegiatan' },
+  const tabs: { key: Tab; label: string; icon: string }[] = [
+    { key: 'ringkasan', label: 'Home', icon: '🏠' },
+    { key: 'siswa', label: 'Siswa', icon: '👥' },
+    { key: 'jadwal', label: 'Jadwal', icon: '📅' },
+    { key: 'pengumuman', label: 'Info', icon: '📢' },
+    { key: 'kegiatan', label: 'Acara', icon: '🎯' },
+    { key: 'galeri', label: 'Galeri', icon: '📸' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950">
+    <div style={{ minHeight: '100vh', background: '#f0f4ff', fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 pb-20">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl backdrop-blur-sm">
-              🎓
-            </div>
+      <div style={{ background: 'linear-gradient(135deg,#1d4ed8 0%,#4338ca 100%)', padding: '14px 16px', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '38px', height: '38px', background: 'rgba(255,255,255,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>🎓</div>
             <div>
-              <h1 className="text-xl font-bold font-display">{className}</h1>
-              <p className="text-blue-200 text-sm">SMPN 1 · Tahun Ajaran 2025/2026</p>
+              <div style={{ color: '#fff', fontSize: '15px', fontWeight: '800', fontFamily: "'Sora',sans-serif", lineHeight: 1.2 }}>XI TSM 2</div>
+              <div style={{ color: '#93c5fd', fontSize: '10px' }}>SMKN 2 Jember · 2025/2026</div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-blue-200 hover:text-white text-sm transition"
-          >
-            Keluar →
-          </button>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', padding: '6px 12px', color: '#fff', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '600' }}>Keluar</button>
         </div>
       </div>
 
-      {/* Card container */}
-      <div className="max-w-2xl mx-auto px-4 -mt-12 pb-8">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* Tabs */}
-          <div className="flex border-b border-slate-100 overflow-x-auto">
-            {tabs.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex-shrink-0 px-5 py-4 text-sm font-semibold transition
-                  ${tab === t.key
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                    : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                {t.label}
-              </button>
+      {/* Tab Bar */}
+      <div style={{ background: '#fff', display: 'flex', borderBottom: '2px solid #f1f5f9', position: 'sticky', top: '66px', zIndex: 40, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', overflowX: 'auto' }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{
+            flex: 1, minWidth: '52px', padding: '8px 4px 6px', border: 'none',
+            background: 'transparent',
+            borderBottom: tab === t.key ? '2px solid #2563eb' : '2px solid transparent',
+            color: tab === t.key ? '#2563eb' : '#94a3b8',
+            cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+            marginBottom: '-2px', transition: 'all .15s',
+          }}>
+            <span style={{ fontSize: '17px' }}>{t.icon}</span>
+            <span style={{ fontSize: '8px', fontWeight: '700', letterSpacing: '0.2px' }}>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '14px' }}>
+
+        {/* HOME / RINGKASAN */}
+        {tab === 'ringkasan' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '14px' }}>
+              {[
+                { n: students.length, l: 'Siswa', bg: '#eff6ff', c: '#2563eb', icon: '👥' },
+                { n: upcoming.length, l: 'Acara', bg: '#ecfdf5', c: '#059669', icon: '🎯' },
+                { n: gallery.length, l: 'Foto', bg: '#fdf4ff', c: '#9333ea', icon: '📸' },
+              ].map(item => (
+                <div key={item.l} style={{ background: item.bg, borderRadius: '14px', padding: '12px 8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', marginBottom: '2px' }}>{item.icon}</div>
+                  <div style={{ fontSize: '22px', fontWeight: '800', color: item.c, fontFamily: "'Sora',sans-serif", lineHeight: 1 }}>{item.n}</div>
+                  <div style={{ fontSize: '9px', color: '#64748b', marginTop: '3px', fontWeight: '600' }}>{item.l}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pengurus */}
+            <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '12px' }}>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', fontFamily: "'Sora',sans-serif", marginBottom: '14px' }}>👑 Pengurus Kelas</div>
+              {pengurus.length === 0
+                ? <div style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '12px 0' }}>Belum ada pengurus</div>
+                : (
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(pengurus.length, 3)},1fr)`, gap: '12px' }}>
+                    {pengurus.map(p => (
+                      <div key={p.id} style={{ textAlign: 'center' }}>
+                        <div style={{ width: '54px', height: '54px', borderRadius: '16px', margin: '0 auto 8px', background: positionColor[p.position] + '20', border: `2px solid ${positionColor[p.position]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '800', color: positionColor[p.position], overflow: 'hidden' }}>
+                          {p.photo_url ? <img src={p.photo_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : p.name[0]}
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#1e293b', lineHeight: 1.3 }}>{p.name}</div>
+                        <div style={{ fontSize: '9px', fontWeight: '600', color: positionColor[p.position], marginTop: '2px' }}>{p.position}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+            </div>
+
+            {/* Foto terbaru */}
+            {gallery.length > 0 && (
+              <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', fontFamily: "'Sora',sans-serif" }}>📸 Foto Terbaru</div>
+                  <button onClick={() => setTab('galeri')} style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>Lihat semua →</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px' }}>
+                  {gallery.slice(0, 6).map(g => (
+                    <div key={g.id} onClick={() => { setPreviewImg(g); setTab('galeri'); }} style={{ paddingTop: '100%', position: 'relative', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer' }}>
+                      <img src={g.photo_url} alt={g.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pengumuman terbaru */}
+            {announcements.length > 0 && (
+              <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '12px' }}>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', fontFamily: "'Sora',sans-serif", marginBottom: '10px' }}>📢 Info Terbaru</div>
+                <div style={{ borderLeft: '3px solid #2563eb', paddingLeft: '12px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{announcements[0].title}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', lineHeight: 1.6 }}>{announcements[0].content.substring(0, 100)}{announcements[0].content.length > 100 ? '...' : ''}</div>
+                  <button onClick={() => setTab('pengumuman')} style={{ marginTop: '6px', background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: '700', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Baca selengkapnya →</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SISWA */}
+        {tab === 'siswa' && (
+          <div>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Cari nama atau NIS..."
+              style={{ width: '100%', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '12px 14px', fontSize: '13px', fontFamily: 'inherit', outline: 'none', marginBottom: '14px', boxSizing: 'border-box', background: '#fff' }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px' }}>
+              {filtered.map(s => (
+                <div key={s.id} style={{ background: '#fff', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', margin: '0 auto 10px', background: positionColor[s.position] + '15', border: `2px solid ${positionColor[s.position]}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '800', color: positionColor[s.position], overflow: 'hidden' }}>
+                    {s.photo_url ? <img src={s.photo_url} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : s.name[0]}
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', lineHeight: 1.3 }}>{s.name}</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', margin: '3px 0', fontFamily: 'monospace' }}>{s.nis}</div>
+                  <span style={{ display: 'inline-block', background: positionColor[s.position], color: '#fff', fontSize: '9px', fontWeight: '700', padding: '3px 10px', borderRadius: '99px' }}>{s.position}</span>
+                </div>
+              ))}
+              {filtered.length === 0 && <div style={{ gridColumn: 'span 2', textAlign: 'center', color: '#94a3b8', padding: '40px', fontSize: '13px' }}>Tidak ditemukan</div>}
+            </div>
+          </div>
+        )}
+
+        {/* JADWAL */}
+        {tab === 'jadwal' && (
+          <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', fontFamily: "'Sora',sans-serif", marginBottom: '14px' }}>📅 Jadwal Pelajaran</div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px', minWidth: '320px' }}>
+                <thead>
+                  <tr style={{ background: 'linear-gradient(90deg,#1d4ed8,#4338ca)', color: '#fff' }}>
+                    <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: '700', borderRadius: '10px 0 0 0' }}>Jam</th>
+                    {days.map((d, i) => <th key={d} style={{ padding: '10px 4px', fontWeight: '700', borderRadius: i === 4 ? '0 10px 0 0' : 0 }}>{d.substring(0, 3)}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ background: '#fff7ed' }}>
+                    <td style={{ padding: '8px', color: '#b45309', fontSize: '9px', fontFamily: 'monospace' }}>11:00</td>
+                    <td colSpan={5} style={{ textAlign: 'center', color: '#b45309', fontWeight: '700', fontSize: '10px', padding: '8px' }}>☀️ ISTIRAHAT</td>
+                  </tr>
+                  {allTimes.map((time, i) => {
+                    const slots = schedules.filter(sc => sc.start_time === time);
+                    return (
+                      <tr key={time} style={{ background: i % 2 === 0 ? '#fff' : '#f8faff', borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '9px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{time}</td>
+                        {days.map(day => {
+                          const found = slots.find(sc => sc.day === day);
+                          return (
+                            <td key={day} style={{ padding: '6px 3px', textAlign: 'center' }}>
+                              {found
+                                ? <span style={{ display: 'inline-block', background: '#eff6ff', color: '#1d4ed8', borderRadius: '6px', padding: '3px 4px', fontSize: '9px', fontWeight: '600', lineHeight: 1.3 }}>{found.subject.split(' ')[0]}</span>
+                                : <span style={{ color: '#e2e8f0' }}>—</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {allTimes.length === 0 && <tr><td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: '#94a3b8' }}>Belum ada jadwal</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* PENGUMUMAN */}
+        {tab === 'pengumuman' && (
+          <div>
+            {announcements.length === 0 && <div style={{ textAlign: 'center', color: '#94a3b8', padding: '60px 0', fontSize: '13px' }}>📭 Belum ada pengumuman</div>}
+            {announcements.map(a => (
+              <div key={a.id} style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '12px', borderLeft: '4px solid #2563eb' }}>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', fontFamily: "'Sora',sans-serif", marginBottom: '4px' }}>{a.title}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '10px' }}>📅 {new Date(a.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.8 }}>{a.content}</div>
+              </div>
             ))}
           </div>
+        )}
 
-          {/* Tab Content */}
-          <div className="p-6">
-            {tab === 'ringkasan' && (
-              <div>
-                <h2 className="text-lg font-bold text-slate-800 font-display mb-4">Pengurus Kelas</h2>
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  {[ketua, sekretaris, bendahara].filter(Boolean).map((s) => s && (
-                    <div key={s.id} className="text-center">
-                      <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-2"
-                        style={{ background: positionColor[s.position] + '20', border: `2px solid ${positionColor[s.position]}` }}>
-                        {s.photo_url ? (
-                          <img src={s.photo_url} alt={s.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
-                            style={{ color: positionColor[s.position] }}>
-                            {s.name[0]}
-                          </div>
-                        )}
-                      </div>
-                      <p className="font-semibold text-slate-800 text-sm">{s.name}</p>
-                      <p className="text-xs" style={{ color: positionColor[s.position] }}>{s.position}</p>
+        {/* KEGIATAN */}
+        {tab === 'kegiatan' && (
+          <div>
+            {upcoming.length > 0 && (
+              <>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '10px', padding: '0 2px' }}>🎯 Acara Mendatang</div>
+                {upcoming.map(a => (
+                  <div key={a.id} style={{ background: '#fff', borderRadius: '16px', padding: '16px', display: 'flex', gap: '14px', alignItems: 'flex-start', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: '10px' }}>
+                    <div style={{ background: 'linear-gradient(135deg,#1d4ed8,#4338ca)', borderRadius: '14px', padding: '10px 12px', textAlign: 'center', flexShrink: 0, minWidth: '52px', boxShadow: '0 4px 12px rgba(29,78,216,0.3)' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '800', color: '#fff', fontFamily: "'Sora',sans-serif", lineHeight: 1 }}>{new Date(a.date).getDate()}</div>
+                      <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.8)', marginTop: '2px', fontWeight: '600' }}>{new Date(a.date).toLocaleDateString('id-ID', { month: 'short' })}</div>
                     </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-blue-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-blue-600 font-display">{students.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Total Siswa</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-purple-600 font-display">{announcements.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Pengumuman</p>
-                  </div>
-                  <div className="bg-emerald-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-emerald-600 font-display">{schedules.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Jadwal Aktif</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-orange-600 font-display">{activities.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Kegiatan</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === 'siswa' && (
-              <div>
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Cari siswa..."
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {filteredStudents.map(s => (
-                    <div key={s.id} className="student-card bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 text-center border border-blue-100 cursor-pointer">
-                      <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-3"
-                        style={{ background: positionColor[s.position] + '20' }}>
-                        {s.photo_url ? (
-                          <img src={s.photo_url} alt={s.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
-                            style={{ color: positionColor[s.position] }}>
-                            {s.name[0]}
-                          </div>
-                        )}
-                      </div>
-                      <p className="font-semibold text-slate-800 text-sm leading-tight">{s.name}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">NIS: {s.nis}</p>
-                      <span className="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-                        style={{ background: positionColor[s.position] }}>
-                        {s.position}
-                      </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b', fontFamily: "'Sora',sans-serif" }}>{a.title}</div>
+                      {a.description && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', lineHeight: 1.7 }}>{a.description}</div>}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tab === 'jadwal' && (
-              <div>
-                <h2 className="text-lg font-bold text-slate-800 font-display mb-4">Jadwal Pelajaran</h2>
-                <div className="overflow-auto rounded-xl border border-slate-100">
-                  <table className="w-full text-sm min-w-[500px]">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                        <th className="text-left px-4 py-3 rounded-tl-xl font-semibold">Jam</th>
-                        {days.map(d => (
-                          <th key={d} className="text-left px-4 py-3 font-semibold">{d}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="bg-orange-50 border-b border-orange-100">
-                        <td className="px-4 py-3 font-mono text-xs text-orange-600">11:00 - 13:00</td>
-                        {days.map(d => (
-                          <td key={d} className="px-4 py-3 text-orange-400 font-semibold text-xs">ISTIRAHAT</td>
-                        ))}
-                      </tr>
-                      {allTimes.map(time => {
-                        const slots = schedules.filter(s => s.start_time === time);
-                        return (
-                          <tr key={time} className="border-b border-slate-50">
-                            <td className="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">
-                              {time} - {slots[0]?.end_time || ''}
-                            </td>
-                            {days.map(day => {
-                              const s = slots.find(sc => sc.day === day);
-                              return (
-                                <td key={day} className="px-4 py-3 text-slate-700 text-xs">
-                                  {s ? s.subject : <span className="text-slate-300">—</span>}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {tab === 'pengumuman' && (
-              <div className="space-y-4">
-                {announcements.length === 0 && (
-                  <div className="text-center py-12 text-slate-400">Belum ada pengumuman.</div>
-                )}
-                {announcements.map(a => (
-                  <div key={a.id} className="border border-slate-100 rounded-2xl p-5">
-                    <h3 className="font-semibold text-slate-800 font-display">{a.title}</h3>
-                    <p className="text-xs text-slate-400 mt-1 mb-3">
-                      {new Date(a.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                    <p className="text-slate-600 text-sm leading-relaxed">{a.content}</p>
                   </div>
                 ))}
-              </div>
+              </>
             )}
 
-            {tab === 'kegiatan' && (
-              <div className="space-y-4">
-                {activities.length === 0 && (
-                  <div className="text-center py-12 text-slate-400">Belum ada kegiatan.</div>
-                )}
-                {activities.map(a => (
-                  <div key={a.id} className="border border-slate-100 rounded-2xl overflow-hidden">
-                    {a.photo_url && (
-                      <div className="h-44 w-full overflow-hidden bg-slate-100">
-                        <img src={a.photo_url} alt={a.title} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <div className="p-5 flex gap-4">
-                    <div className="flex-shrink-0 bg-blue-50 rounded-xl p-3 text-center min-w-[60px]">
-                      <div className="text-2xl font-bold text-blue-600 font-display">
-                        {new Date(a.date).getDate()}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {new Date(a.date).toLocaleDateString('id-ID', { month: 'short' })}
-                      </div>
+            {archived.length > 0 && (
+              <>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: '#94a3b8', margin: '16px 0 10px 2px' }}>🗂 Arsip Kegiatan</div>
+                {archived.map(a => (
+                  <div key={a.id} style={{ background: '#f8faff', borderRadius: '16px', padding: '14px', display: 'flex', gap: '12px', alignItems: 'flex-start', border: '1px solid #e8eef8', marginBottom: '8px', opacity: 0.75 }}>
+                    <div style={{ background: '#e2e8f0', borderRadius: '12px', padding: '8px 10px', textAlign: 'center', flexShrink: 0, minWidth: '48px' }}>
+                      <div style={{ fontSize: '18px', fontWeight: '800', color: '#64748b', fontFamily: "'Sora',sans-serif", lineHeight: 1 }}>{new Date(a.date).getDate()}</div>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>{new Date(a.date).toLocaleDateString('id-ID', { month: 'short', year: '2-digit' })}</div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-800 font-display">{a.title}</h3>
-                      {a.description && (
-                        <p className="text-slate-500 text-sm mt-1">{a.description}</p>
-                      )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>{a.title}</div>
+                      {a.description && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px' }}>{a.description}</div>}
                     </div>
-                  </div>
                   </div>
                 ))}
-              </div>
+              </>
+            )}
+
+            {upcoming.length === 0 && archived.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '60px 0', fontSize: '13px' }}>📭 Belum ada kegiatan</div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* GALERI */}
+        {tab === 'galeri' && (
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', fontFamily: "'Sora',sans-serif", marginBottom: '14px' }}>📸 Galeri Kegiatan Kelas</div>
+            {gallery.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '60px 0' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📷</div>
+                <div style={{ fontSize: '13px' }}>Belum ada foto kegiatan</div>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px' }}>
+              {gallery.map(g => (
+                <div key={g.id} onClick={() => setPreviewImg(g)} style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e8eef8', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', cursor: 'pointer' }}>
+                  <div style={{ position: 'relative', paddingTop: '75%' }}>
+                    <img src={g.photo_url} alt={g.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=📷'; }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
+                    {g.event_date && (
+                      <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '3px 8px', borderRadius: '99px', backdropFilter: 'blur(4px)' }}>
+                        {new Date(g.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: '10px 12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b', lineHeight: 1.3 }}>{g.title}</div>
+                    {g.description && <div style={{ fontSize: '10px', color: '#64748b', marginTop: '3px', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>{g.description}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImg && (
+        <div onClick={() => setPreviewImg(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <button onClick={() => setPreviewImg(null)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: '#fff', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+          <img src={previewImg.photo_url} alt={previewImg.title} style={{ maxWidth: '100%', maxHeight: '72vh', borderRadius: '16px', objectFit: 'contain' }} />
+          <div style={{ marginTop: '16px', textAlign: 'center', padding: '0 20px' }}>
+            <div style={{ color: '#fff', fontSize: '16px', fontWeight: '700', fontFamily: "'Sora',sans-serif" }}>{previewImg.title}</div>
+            {previewImg.description && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '6px', lineHeight: 1.6 }}>{previewImg.description}</div>}
+            {previewImg.event_date && <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginTop: '6px' }}>📅 {new Date(previewImg.event_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

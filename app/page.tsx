@@ -12,9 +12,5 @@ export default function Home() {
     redirect('/admin');
   }
   
-  if (auth.role === 'wali_kelas') {
-    redirect('/wali-kelas');
-  }
-  
   redirect('/student');
 }
