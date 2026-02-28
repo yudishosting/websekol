@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 
 type Tab = 'ringkasan' | 'siswa' | 'jadwal' | 'pengumuman' | 'kegiatan';
 
@@ -53,14 +52,13 @@ export default function StudentPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [search, setSearch] = useState('');
-  const [className] = useState('Kelas 9A');
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/students').then(r => r.json()).then(setStudents);
-    fetch('/api/schedules').then(r => r.json()).then(setSchedules);
-    fetch('/api/announcements').then(r => r.json()).then(setAnnouncements);
-    fetch('/api/activities').then(r => r.json()).then(setActivities);
+    fetch('/api/students').then(r => r.json()).then(d => Array.isArray(d) ? setStudents(d) : null);
+    fetch('/api/schedules').then(r => r.json()).then(d => Array.isArray(d) ? setSchedules(d) : null);
+    fetch('/api/announcements').then(r => r.json()).then(d => Array.isArray(d) ? setAnnouncements(d) : null);
+    fetch('/api/activities').then(r => r.json()).then(d => Array.isArray(d) ? setActivities(d) : null);
   }, []);
 
   const handleLogout = async () => {
@@ -69,18 +67,10 @@ export default function StudentPage() {
   };
 
   const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.nis.includes(search)
+    s.name.toLowerCase().includes(search.toLowerCase()) || s.nis.includes(search)
   );
 
-  const ketua = students.find(s => s.position === 'Ketua');
-  const sekretaris = students.find(s => s.position === 'Sekretaris');
-  const bendahara = students.find(s => s.position === 'Bendahara');
-
-  const getScheduleForDay = (day: string) => {
-    return schedules.filter(s => s.day === day);
-  };
-
+  const pengurus = students.filter(s => ['Ketua','Sekretaris','Bendahara'].includes(s.position));
   const allTimes = Array.from(new Set<string>(schedules.map(s => s.start_time))).sort();
 
   const tabs: { key: Tab; label: string }[] = [
@@ -92,213 +82,178 @@ export default function StudentPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950">
+    <div style={{minHeight:'100vh',background:'linear-gradient(160deg,#0f172a 0%,#1e3a8a 60%,#312e81 100%)',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 pb-20">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl backdrop-blur-sm">
-              🎓
-            </div>
+      <div style={{background:'linear-gradient(90deg,#1d4ed8,#4338ca)',padding:'20px 20px 50px'}}>
+        <div style={{maxWidth:'600px',margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <div style={{width:'46px',height:'46px',background:'rgba(255,255,255,0.15)',borderRadius:'14px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0}}>🎓</div>
             <div>
-              <h1 className="text-xl font-bold font-display">{className}</h1>
-              <p className="text-blue-200 text-sm">SMPN 1 · Tahun Ajaran 2025/2026</p>
+              <div style={{color:'#fff',fontSize:'18px',fontWeight:'800',fontFamily:"'Sora',sans-serif",lineHeight:1.2}}>XI TSM 2</div>
+              <div style={{color:'#93c5fd',fontSize:'11px',marginTop:'2px'}}>SMKN 2 Jember · 2025/2026</div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-blue-200 hover:text-white text-sm transition"
-          >
-            Keluar →
+          <button onClick={handleLogout} style={{background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'10px',padding:'6px 14px',color:'#93c5fd',fontSize:'12px',cursor:'pointer',fontFamily:'inherit'}}>
+            Keluar
           </button>
         </div>
       </div>
 
-      {/* Card container */}
-      <div className="max-w-2xl mx-auto px-4 -mt-12 pb-8">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+      {/* Main card */}
+      <div style={{maxWidth:'600px',margin:'-28px auto 0',padding:'0 16px 32px'}}>
+        <div style={{background:'#fff',borderRadius:'24px',boxShadow:'0 20px 60px rgba(0,0,0,0.3)',overflow:'hidden'}}>
           {/* Tabs */}
-          <div className="flex border-b border-slate-100 overflow-x-auto">
+          <div style={{display:'flex',borderBottom:'1px solid #f1f5f9',overflowX:'auto'}}>
             {tabs.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`flex-shrink-0 px-5 py-4 text-sm font-semibold transition
-                  ${tab === t.key
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
-                    : 'text-slate-500 hover:text-slate-700'}`}
-              >
+              <button key={t.key} onClick={() => setTab(t.key)} style={{
+                flexShrink:0,padding:'14px 18px',fontSize:'12px',fontWeight:'600',border:'none',
+                background: tab === t.key ? '#eff6ff' : 'transparent',
+                color: tab === t.key ? '#2563eb' : '#94a3b8',
+                borderBottom: tab === t.key ? '2px solid #2563eb' : '2px solid transparent',
+                cursor:'pointer',fontFamily:'inherit',transition:'all .2s',
+              }}>
                 {t.label}
               </button>
             ))}
           </div>
 
-          {/* Tab Content */}
-          <div className="p-6">
+          {/* Content */}
+          <div style={{padding:'20px'}}>
+
+            {/* RINGKASAN */}
             {tab === 'ringkasan' && (
               <div>
-                <h2 className="text-lg font-bold text-slate-800 font-display mb-4">Pengurus Kelas</h2>
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  {[ketua, sekretaris, bendahara].filter(Boolean).map((s) => s && (
-                    <div key={s.id} className="text-center">
-                      <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-2"
-                        style={{ background: positionColor[s.position] + '20', border: `2px solid ${positionColor[s.position]}` }}>
-                        {s.photo_url ? (
-                          <img src={s.photo_url} alt={s.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
-                            style={{ color: positionColor[s.position] }}>
-                            {s.name[0]}
-                          </div>
-                        )}
+                <div style={{fontSize:'14px',fontWeight:'700',color:'#1e293b',marginBottom:'16px',fontFamily:"'Sora',sans-serif"}}>Pengurus Kelas</div>
+                {pengurus.length === 0 ? (
+                  <div style={{textAlign:'center',color:'#94a3b8',fontSize:'13px',padding:'20px 0'}}>Belum ada pengurus kelas</div>
+                ) : (
+                  <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(pengurus.length,3)},1fr)`,gap:'12px',marginBottom:'20px'}}>
+                    {pengurus.map(s => (
+                      <div key={s.id} style={{textAlign:'center'}}>
+                        <div style={{
+                          width:'56px',height:'56px',borderRadius:'16px',margin:'0 auto 8px',
+                          background: positionColor[s.position] + '20',
+                          border: `2px solid ${positionColor[s.position]}`,
+                          display:'flex',alignItems:'center',justifyContent:'center',
+                          fontSize:'22px',fontWeight:'800',color: positionColor[s.position],
+                          overflow:'hidden',
+                        }}>
+                          {s.photo_url ? <img src={s.photo_url} alt={s.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : s.name[0]}
+                        </div>
+                        <div style={{fontSize:'12px',fontWeight:'700',color:'#1e293b',lineHeight:1.3}}>{s.name}</div>
+                        <div style={{fontSize:'10px',fontWeight:'600',color: positionColor[s.position],marginTop:'2px'}}>{s.position}</div>
                       </div>
-                      <p className="font-semibold text-slate-800 text-sm">{s.name}</p>
-                      <p className="text-xs" style={{ color: positionColor[s.position] }}>{s.position}</p>
+                    ))}
+                  </div>
+                )}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                  {[
+                    {n: students.length, l: 'Total Siswa', bg:'#eff6ff', c:'#2563eb'},
+                    {n: announcements.length, l: 'Pengumuman', bg:'#f5f3ff', c:'#6d28d9'},
+                    {n: schedules.length, l: 'Jadwal Aktif', bg:'#ecfdf5', c:'#059669'},
+                    {n: activities.length, l: 'Kegiatan', bg:'#fffbeb', c:'#b45309'},
+                  ].map(item => (
+                    <div key={item.l} style={{background:item.bg,borderRadius:'16px',padding:'16px',textAlign:'center'}}>
+                      <div style={{fontSize:'28px',fontWeight:'800',color:item.c,fontFamily:"'Sora',sans-serif"}}>{item.n}</div>
+                      <div style={{fontSize:'11px',color:'#64748b',marginTop:'4px'}}>{item.l}</div>
                     </div>
                   ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-blue-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-blue-600 font-display">{students.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Total Siswa</p>
-                  </div>
-                  <div className="bg-purple-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-purple-600 font-display">{announcements.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Pengumuman</p>
-                  </div>
-                  <div className="bg-emerald-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-emerald-600 font-display">{schedules.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Jadwal Aktif</p>
-                  </div>
-                  <div className="bg-orange-50 rounded-2xl p-4">
-                    <p className="text-2xl font-bold text-orange-600 font-display">{activities.length}</p>
-                    <p className="text-sm text-slate-600 mt-1">Kegiatan</p>
-                  </div>
                 </div>
               </div>
             )}
 
+            {/* SISWA */}
             {tab === 'siswa' && (
               <div>
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Cari siswa..."
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍  Cari nama atau NIS..."
+                  style={{width:'100%',border:'1.5px solid #e2e8f0',borderRadius:'12px',padding:'10px 14px',fontSize:'13px',fontFamily:'inherit',outline:'none',marginBottom:'14px',boxSizing:'border-box'}}/>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
                   {filteredStudents.map(s => (
-                    <div key={s.id} className="student-card bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 text-center border border-blue-100 cursor-pointer">
-                      <div className="w-16 h-16 mx-auto rounded-2xl overflow-hidden mb-3"
-                        style={{ background: positionColor[s.position] + '20' }}>
-                        {s.photo_url ? (
-                          <img src={s.photo_url} alt={s.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
-                            style={{ color: positionColor[s.position] }}>
-                            {s.name[0]}
-                          </div>
-                        )}
+                    <div key={s.id} style={{background:'linear-gradient(135deg,#eff6ff,#eef2ff)',borderRadius:'16px',padding:'14px',textAlign:'center',border:'1px solid #c7d2fe'}}>
+                      <div style={{width:'48px',height:'48px',borderRadius:'14px',margin:'0 auto 8px',background: positionColor[s.position]+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',fontWeight:'800',color:positionColor[s.position],overflow:'hidden'}}>
+                        {s.photo_url ? <img src={s.photo_url} alt={s.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : s.name[0]}
                       </div>
-                      <p className="font-semibold text-slate-800 text-sm leading-tight">{s.name}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">NIS: {s.nis}</p>
-                      <span className="inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
-                        style={{ background: positionColor[s.position] }}>
-                        {s.position}
-                      </span>
+                      <div style={{fontSize:'12px',fontWeight:'700',color:'#1e293b',lineHeight:1.3}}>{s.name}</div>
+                      <div style={{fontSize:'10px',color:'#94a3b8',margin:'2px 0'}}>NIS: {s.nis}</div>
+                      <span style={{display:'inline-block',background:positionColor[s.position],color:'#fff',fontSize:'9px',fontWeight:'700',padding:'2px 8px',borderRadius:'99px',marginTop:'4px'}}>{s.position}</span>
                     </div>
                   ))}
+                  {filteredStudents.length === 0 && <div style={{gridColumn:'span 2',textAlign:'center',color:'#94a3b8',padding:'20px',fontSize:'13px'}}>Tidak ada siswa ditemukan</div>}
                 </div>
               </div>
             )}
 
+            {/* JADWAL */}
             {tab === 'jadwal' && (
               <div>
-                <h2 className="text-lg font-bold text-slate-800 font-display mb-4">Jadwal Pelajaran</h2>
-                <div className="overflow-auto rounded-xl border border-slate-100">
-                  <table className="w-full text-sm min-w-[500px]">
+                <div style={{fontSize:'14px',fontWeight:'700',color:'#1e293b',marginBottom:'14px',fontFamily:"'Sora',sans-serif"}}>Jadwal Pelajaran</div>
+                <div style={{overflowX:'auto',borderRadius:'14px',border:'1px solid #e2e8f0'}}>
+                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:'10px',minWidth:'360px'}}>
                     <thead>
-                      <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                        <th className="text-left px-4 py-3 rounded-tl-xl font-semibold">Jam</th>
-                        {days.map(d => (
-                          <th key={d} className="text-left px-4 py-3 font-semibold">{d}</th>
-                        ))}
+                      <tr style={{background:'linear-gradient(90deg,#1d4ed8,#4338ca)',color:'#fff'}}>
+                        <th style={{padding:'10px 8px',textAlign:'left',fontWeight:'700',whiteSpace:'nowrap'}}>Jam</th>
+                        {days.map(d => <th key={d} style={{padding:'10px 6px',fontWeight:'700'}}>{d}</th>)}
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="bg-orange-50 border-b border-orange-100">
-                        <td className="px-4 py-3 font-mono text-xs text-orange-600">11:00 - 13:00</td>
-                        {days.map(d => (
-                          <td key={d} className="px-4 py-3 text-orange-400 font-semibold text-xs">ISTIRAHAT</td>
-                        ))}
+                      <tr style={{background:'#fff7ed',borderBottom:'1px solid #fed7aa'}}>
+                        <td style={{padding:'8px',color:'#b45309',fontFamily:'monospace',fontSize:'9px',whiteSpace:'nowrap'}}>11:00-13:00</td>
+                        <td colSpan={5} style={{padding:'8px',textAlign:'center',color:'#b45309',fontWeight:'700',fontSize:'10px'}}>☀️ ISTIRAHAT</td>
                       </tr>
                       {allTimes.map(time => {
                         const slots = schedules.filter(s => s.start_time === time);
                         return (
-                          <tr key={time} className="border-b border-slate-50">
-                            <td className="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">
-                              {time} - {slots[0]?.end_time || ''}
-                            </td>
+                          <tr key={time} style={{borderBottom:'1px solid #f1f5f9'}}>
+                            <td style={{padding:'8px',fontFamily:'monospace',fontSize:'9px',color:'#94a3b8',whiteSpace:'nowrap'}}>{time}-{slots[0]?.end_time}</td>
                             {days.map(day => {
                               const s = slots.find(sc => sc.day === day);
-                              return (
-                                <td key={day} className="px-4 py-3 text-slate-700 text-xs">
-                                  {s ? s.subject : <span className="text-slate-300">—</span>}
-                                </td>
-                              );
+                              return <td key={day} style={{padding:'8px 6px',color: s ? '#1e293b' : '#cbd5e1',fontSize:'10px',textAlign:'center'}}>{s ? s.subject : '—'}</td>;
                             })}
                           </tr>
                         );
                       })}
+                      {allTimes.length === 0 && <tr><td colSpan={6} style={{padding:'20px',textAlign:'center',color:'#94a3b8'}}>Belum ada jadwal</td></tr>}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
 
+            {/* PENGUMUMAN */}
             {tab === 'pengumuman' && (
-              <div className="space-y-4">
-                {announcements.length === 0 && (
-                  <div className="text-center py-12 text-slate-400">Belum ada pengumuman.</div>
-                )}
+              <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                {announcements.length === 0 && <div style={{textAlign:'center',color:'#94a3b8',padding:'40px 0',fontSize:'13px'}}>Belum ada pengumuman</div>}
                 {announcements.map(a => (
-                  <div key={a.id} className="border border-slate-100 rounded-2xl p-5">
-                    <h3 className="font-semibold text-slate-800 font-display">{a.title}</h3>
-                    <p className="text-xs text-slate-400 mt-1 mb-3">
-                      {new Date(a.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                    <p className="text-slate-600 text-sm leading-relaxed">{a.content}</p>
+                  <div key={a.id} style={{border:'1px solid #e2e8f0',borderRadius:'16px',padding:'16px'}}>
+                    <div style={{fontSize:'14px',fontWeight:'700',color:'#1e293b',fontFamily:"'Sora',sans-serif"}}>{a.title}</div>
+                    <div style={{fontSize:'10px',color:'#94a3b8',margin:'4px 0 10px'}}>
+                      {new Date(a.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}
+                    </div>
+                    <div style={{fontSize:'13px',color:'#64748b',lineHeight:1.7}}>{a.content}</div>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* KEGIATAN */}
             {tab === 'kegiatan' && (
-              <div className="space-y-4">
-                {activities.length === 0 && (
-                  <div className="text-center py-12 text-slate-400">Belum ada kegiatan.</div>
-                )}
+              <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                {activities.length === 0 && <div style={{textAlign:'center',color:'#94a3b8',padding:'40px 0',fontSize:'13px'}}>Belum ada kegiatan</div>}
                 {activities.map(a => (
-                  <div key={a.id} className="border border-slate-100 rounded-2xl p-5 flex gap-4">
-                    <div className="flex-shrink-0 bg-blue-50 rounded-xl p-3 text-center min-w-[60px]">
-                      <div className="text-2xl font-bold text-blue-600 font-display">
-                        {new Date(a.date).getDate()}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {new Date(a.date).toLocaleDateString('id-ID', { month: 'short' })}
-                      </div>
+                  <div key={a.id} style={{display:'flex',gap:'14px',border:'1px solid #e2e8f0',borderRadius:'16px',padding:'16px',alignItems:'flex-start'}}>
+                    <div style={{background:'#eff6ff',borderRadius:'14px',padding:'10px 14px',textAlign:'center',flexShrink:0,minWidth:'52px'}}>
+                      <div style={{fontSize:'22px',fontWeight:'800',color:'#2563eb',fontFamily:"'Sora',sans-serif",lineHeight:1}}>{new Date(a.date).getDate()}</div>
+                      <div style={{fontSize:'9px',color:'#64748b',marginTop:'2px'}}>{new Date(a.date).toLocaleDateString('id-ID',{month:'short'})}</div>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-800 font-display">{a.title}</h3>
-                      {a.description && (
-                        <p className="text-slate-500 text-sm mt-1">{a.description}</p>
-                      )}
+                      <div style={{fontSize:'13px',fontWeight:'700',color:'#1e293b',fontFamily:"'Sora',sans-serif"}}>{a.title}</div>
+                      {a.description && <div style={{fontSize:'12px',color:'#64748b',marginTop:'4px',lineHeight:1.6}}>{a.description}</div>}
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
           </div>
         </div>
       </div>
